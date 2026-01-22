@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
@@ -40,16 +40,13 @@ def init_db() -> None:
     """
     # Enable PostGIS extension
     with engine.connect() as conn:
-        conn.execute(func.select(func.postgis_version()))
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
         conn.commit()
     
     # Create all tables
     Base.metadata.create_all(bind=engine)
 
 
-@event.listens_for(engine, "connect")
-def set_postgis(dbapi_conn, connection_record):
-    """Set PostGIS extension on connection."""
-    with dbapi_conn.cursor() as cursor:
-        cursor.execute("CREATE EXTENSION IF NOT EXISTS postgis")
-        dbapi_conn.commit()
+# Note: PostGIS extension should be enabled manually in the database
+# Run: CREATE EXTENSION IF NOT EXISTS postgis;
+# The event listener approach doesn't work reliably with connection pooling
